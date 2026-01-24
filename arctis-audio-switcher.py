@@ -24,9 +24,9 @@ sys.stderr.reconfigure(line_buffering=True)
 # CONFIGURATION - Edit these values for your setup
 # =============================================================================
 
-# Audio sink IDs (find with: wpctl status)
-HEADPHONE_SINK = 52  # Your Arctis Nova Pro sink ID
-SPEAKER_SINK = 57    # Your speaker sink ID
+# Audio sink names (partial match, case-insensitive)
+HEADPHONE_SINK_NAME = "Arctis Nova Pro"
+SPEAKER_SINK_NAME = "Starship/Matisse"  # Change this to match your speakers
 
 # Poll interval in seconds
 POLL_INTERVAL = 1.0
@@ -113,9 +113,52 @@ def get_headset_state(fd):
         return None
 
 
-def switch_audio(sink_id, sink_name):
-    """Switch the default audio sink."""
-    print(f"Switching audio to {sink_name} (sink {sink_id})")
+def find_sink_id(name_pattern):
+    """Find a sink ID by name pattern using wpctl status."""
+    try:
+        result = subprocess.run(
+            ["wpctl", "status"],
+            capture_output=True,
+            text=True,
+            check=False
+        )
+
+        in_sinks_section = False
+        for line in result.stdout.split("\n"):
+            # Detect Sinks section
+            if "Sinks:" in line:
+                in_sinks_section = True
+                continue
+
+            # Stop at next section
+            if in_sinks_section and (":" in line and "│" not in line):
+                break
+
+            if in_sinks_section and name_pattern.lower() in line.lower():
+                # Parse sink ID from lines like: " │      52. Arctis Nova Pro Wireless Analog Stereo [vol: 0.95]"
+                # Look for "Analog Stereo" to get the playback sink, not the device
+                if "Analog Stereo" in line or "Stereo" in line:
+                    parts = line.split(".")
+                    if len(parts) >= 2:
+                        # Extract the number before the dot
+                        num_part = parts[0].strip().split()[-1]
+                        if num_part.isdigit():
+                            return int(num_part)
+
+        return None
+    except Exception as e:
+        print(f"Error finding sink: {e}")
+        return None
+
+
+def switch_audio(sink_name_pattern, friendly_name):
+    """Switch the default audio sink by name pattern."""
+    sink_id = find_sink_id(sink_name_pattern)
+    if sink_id is None:
+        print(f"WARNING: Could not find sink matching '{sink_name_pattern}'")
+        return
+
+    print(f"Switching audio to {friendly_name} (sink {sink_id})")
     subprocess.run(["wpctl", "set-default", str(sink_id)], check=False)
 
 
@@ -148,9 +191,9 @@ def main():
                 print(f"Headset state changed: {last_state} -> {state}")
 
                 if state == "ON":
-                    switch_audio(HEADPHONE_SINK, "Arctis Nova Pro Wireless")
+                    switch_audio(HEADPHONE_SINK_NAME, "Headphones")
                 elif state == "OFF":
-                    switch_audio(SPEAKER_SINK, "Speakers")
+                    switch_audio(SPEAKER_SINK_NAME, "Speakers")
 
                 last_state = state
 

@@ -30,13 +30,13 @@ Protocol details from [HeadsetControl](https://github.com/Sapd/HeadsetControl).
 
 ## Installation
 
-### 1. Find your audio sink IDs
+### 1. Find your speaker sink name
 
 ```bash
 wpctl status
 ```
 
-Look for your headset and speaker sinks under "Sinks". Note their IDs (the numbers in brackets).
+Look for your speaker under "Sinks". Note the name (e.g., "Starship/Matisse").
 
 Example output:
 ```
@@ -59,11 +59,13 @@ cp arctis-audio-switcher.py ~/.local/bin/
 chmod +x ~/.local/bin/arctis-audio-switcher.py
 ```
 
-**Edit the script** to set your sink IDs:
+**Edit the script** to set your speaker name (headphones are auto-detected):
 ```python
-HEADPHONE_SINK = 52  # Your headset sink ID
-SPEAKER_SINK = 57    # Your speaker sink ID
+HEADPHONE_SINK_NAME = "Arctis Nova Pro"  # Usually don't need to change
+SPEAKER_SINK_NAME = "Starship/Matisse"   # Change this to match your speakers
 ```
+
+The script finds sinks by name, so it works even if sink IDs change after reboot.
 
 ### 3. Set up udev rules (allows access without root)
 
@@ -141,9 +143,9 @@ done
 
 Look for `SteelSeries Arctis Nova Pro Wireless` with `input4` in the path.
 
-### Wrong sink IDs
+### Sink not found
 
-Sink IDs can change after reboot. For a more robust solution, you can modify the script to find sinks by name instead of ID.
+If the script can't find your sink, check that the name pattern in the configuration matches your device. Run `wpctl status` and look for your speaker name under "Sinks".
 
 ## Supported Devices
 
