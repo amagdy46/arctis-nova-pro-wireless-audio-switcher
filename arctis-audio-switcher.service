@@ -1,0 +1,13 @@
+[Unit]
+Description=SteelSeries Arctis Nova Pro Wireless Audio Switcher
+Documentation=https://github.com/USER/arctis-nova-pro-wireless-audio-switcher
+After=pipewire.service wireplumber.service
+
+[Service]
+Type=simple
+ExecStart=%h/.local/bin/arctis-audio-switcher.py
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=default.target

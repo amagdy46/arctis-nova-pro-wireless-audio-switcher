@@ -1,0 +1,8 @@
+# SteelSeries Arctis Nova Pro Wireless - Allow user access to HID devices
+# This enables the audio switcher script to communicate with the headset base station
+
+# Arctis Nova Pro Wireless
+SUBSYSTEM=="hidraw", ATTRS{idVendor}=="1038", ATTRS{idProduct}=="12e0", MODE="0666"
+
+# Arctis Nova Pro Wireless X
+SUBSYSTEM=="hidraw", ATTRS{idVendor}=="1038", ATTRS{idProduct}=="12e5", MODE="0666"
