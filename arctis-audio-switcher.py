@@ -31,6 +31,9 @@ SPEAKER_SINK_NAME = "Starship/Matisse"  # Change this to match your speakers
 # Poll interval in seconds
 POLL_INTERVAL = 1.0
 
+# Debounce delay - state must be stable for this many seconds before switching
+DEBOUNCE_SECONDS = 3.0
+
 # =============================================================================
 # Device constants (don't change unless you know what you're doing)
 # =============================================================================
@@ -181,21 +184,35 @@ def main():
         sys.exit(1)
 
     last_state = None
-    print("Monitoring headset state...")
+    confirmed_state = None  # State that has been stable long enough
+    pending_state = None    # State we're waiting to confirm
+    pending_since = None    # When the pending state was first seen
+    print(f"Monitoring headset state (debounce: {DEBOUNCE_SECONDS}s)...")
 
     try:
         while True:
             state = get_headset_state(fd)
 
-            if state and state != last_state:
-                print(f"Headset state changed: {last_state} -> {state}")
+            if state:
+                if state != pending_state:
+                    # New state detected, start debounce timer
+                    if state != confirmed_state:
+                        print(f"Headset state: {confirmed_state} -> {state} (waiting {DEBOUNCE_SECONDS}s to confirm)")
+                    pending_state = state
+                    pending_since = time.time()
+                elif pending_state != confirmed_state and pending_since:
+                    # Check if debounce period has passed
+                    elapsed = time.time() - pending_since
+                    if elapsed >= DEBOUNCE_SECONDS:
+                        print(f"Headset state confirmed: {confirmed_state} -> {pending_state}")
 
-                if state == "ON":
-                    switch_audio(HEADPHONE_SINK_NAME, "Headphones")
-                elif state == "OFF":
-                    switch_audio(SPEAKER_SINK_NAME, "Speakers")
+                        if pending_state == "ON":
+                            switch_audio(HEADPHONE_SINK_NAME, "Headphones")
+                        elif pending_state == "OFF":
+                            switch_audio(SPEAKER_SINK_NAME, "Speakers")
 
-                last_state = state
+                        confirmed_state = pending_state
+                        last_state = pending_state
 
             time.sleep(POLL_INTERVAL)
 
